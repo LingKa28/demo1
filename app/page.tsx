@@ -1,101 +1,242 @@
-import Image from "next/image";
+"use client";
+
+import { Fragment, useEffect, useState } from "react";
+import {
+  Box,
+  Button,
+  Card,
+  Drawer,
+  IconButton,
+  Snackbar,
+  SnackbarCloseReason,
+  Stack,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
+  Tabs,
+  TextField,
+  Typography,
+} from "@mui/material";
+import { InlineEdit } from "@/components/inline-edit";
+import {
+  Bookmark,
+  BookmarkBorder,
+  CloseRounded,
+  Star,
+} from "@mui/icons-material";
+import { SnackbarProvider, enqueueSnackbar } from "notistack";
+import { faker } from "@faker-js/faker";
+import dayjs from "dayjs";
+
+export interface SnackbarMessage {
+  message: string;
+  key: number;
+}
+
+type RowData = {
+  key: string;
+  title: string;
+  description: string;
+  content: string;
+  created: Date;
+  bookmarked: boolean;
+};
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [tabValue, setTabValue] = useState<number>(0);
+  const [tableData, setTableData] = useState<RowData[]>([]);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+  const [snackPack, setSnackPack] = useState<readonly SnackbarMessage[]>([]);
+  const [snackOpen, setSnackOpen] = useState<boolean>(false);
+  const [messageInfo, setMessageInfo] = useState<SnackbarMessage | undefined>(
+    undefined
+  );
+
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerContent, setDrawerContent] = useState<string>("");
+
+  useEffect(() => {
+    const tableData: RowData[] = Array.from({ length: 10 }, () => ({
+      key: faker.string.uuid(),
+      title: faker.lorem.word(),
+      description: faker.lorem.sentence(),
+      content: faker.lorem.paragraphs(3),
+      created: faker.date.past(),
+      bookmarked: faker.datatype.boolean(),
+    }));
+
+    setTableData(tableData);
+  }, [tabValue]);
+
+  useEffect(() => {
+    if (snackPack.length && !messageInfo) {
+      setMessageInfo({ ...snackPack[0] });
+      setSnackPack((prev) => prev.slice(1));
+      setSnackOpen(true);
+    } else if (snackPack.length && messageInfo && snackOpen) {
+      setSnackOpen(false);
+    }
+  }, [snackPack, messageInfo, snackOpen]);
+
+  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
+
+  const handleClose = (
+    _: React.SyntheticEvent | Event,
+    reason?: SnackbarCloseReason
+  ) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setSnackOpen(false);
+  };
+
+  const handleExited = () => {
+    setMessageInfo(undefined);
+  };
+
+  const handleToggleBookmark = (row: RowData) => {
+    const updatedData = tableData.map((item) => {
+      if (item.key === row.key) {
+        return { ...item, bookmarked: !item.bookmarked };
+      }
+      return item;
+    });
+    setTableData(updatedData);
+
+    const message = row.bookmarked ? "Bookmark removed" : "Bookmark added";
+    enqueueSnackbar(message, { variant: "success" });
+  };
+
+  const handleButtonClick = (content: string) => {
+    setDrawerContent(content);
+    setDrawerOpen(true);
+  };
+
+  return (
+    <SnackbarProvider
+      maxSnack={1}
+      anchorOrigin={{ vertical: "top", horizontal: "center" }}
+    >
+      <Card className="shadow-none mb-4 p-4">
+        <Typography variant="h6" className="mb-4">
+          Search
+        </Typography>
+        <Stack direction="row" spacing={2}>
+          <TextField label="Input One" size="small" variant="outlined" />
+          <TextField label="Input Two" size="small" variant="outlined" />
+          <TextField label="Input Three" size="small" variant="outlined" />
+          <TextField label="Input Four" size="small" variant="outlined" />
+        </Stack>
+      </Card>
+
+      <Box className="bg-white p-4 rounded-lg overflow-x-auto">
+        <Box className="mb-4 border-b border-gray-300">
+          <Tabs value={tabValue} onChange={handleChange}>
+            <Tab label="Item One" icon={<Star />} />
+            <Tab label="Item Two" icon={<Star />} />
+            <Tab label="Item Three" icon={<Star />} />
+          </Tabs>
+        </Box>
+
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell className="font-bold">Title</TableCell>
+              <TableCell className="font-bold">Description</TableCell>
+              <TableCell className="font-bold" align="center">
+                Created
+              </TableCell>
+              <TableCell className="font-bold" align="center">
+                Bookmarked
+              </TableCell>
+              <TableCell></TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {tableData.map((row) => (
+              <TableRow
+                key={row.key}
+                sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+              >
+                <TableCell component="th" scope="row" width={200}>
+                  <InlineEdit
+                    value={row.title}
+                    onChange={(newValue) => {
+                      const updatedData = tableData.map((item) => {
+                        if (item.title === row.title) {
+                          return { ...item, title: newValue };
+                        }
+                        return item;
+                      });
+                      setTableData(updatedData);
+                    }}
+                  />
+                </TableCell>
+                <TableCell>{row.description}</TableCell>
+                <TableCell align="center">
+                  {dayjs(row.created).format("YYYY-MM-DD")}
+                </TableCell>
+                <TableCell align="center">
+                  <IconButton
+                    onClick={() => {
+                      handleToggleBookmark(row);
+                    }}
+                  >
+                    {row.bookmarked ? <Bookmark /> : <BookmarkBorder />}
+                  </IconButton>
+                </TableCell>
+                <TableCell>
+                  <Button onClick={() => handleButtonClick(row.content)}>
+                    Preview
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Box>
+
+      <Drawer
+        anchor="right"
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+      >
+        <Box sx={{ width: 500, background: "#F7F5F2" }} className="p-16 h-full">
+          <Typography textAlign={"center"} variant="h5" className="mb-8">
+            Preview
+          </Typography>
+          <Box className="bg-white p-8">{drawerContent}</Box>
+        </Box>
+      </Drawer>
+
+      <Snackbar
+        key={messageInfo ? messageInfo.key : undefined}
+        open={snackOpen}
+        autoHideDuration={6000}
+        onClose={handleClose}
+        TransitionProps={{ onExited: handleExited }}
+        message={messageInfo ? messageInfo.message : undefined}
+        action={
+          <Fragment>
+            <Button color="secondary" size="small" onClick={handleClose}>
+              UNDO
+            </Button>
+            <IconButton
+              aria-label="close"
+              color="inherit"
+              sx={{ p: 0.5 }}
+              onClick={handleClose}
+            >
+              <CloseRounded />
+            </IconButton>
+          </Fragment>
+        }
+      />
+    </SnackbarProvider>
   );
 }
